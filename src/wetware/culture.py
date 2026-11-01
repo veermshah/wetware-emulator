@@ -7,7 +7,7 @@ import time
 from collections.abc import Callable, Iterator, Sequence
 from contextlib import contextmanager
 from dataclasses import asdict, dataclass, field
-from typing import Any
+from typing import Any, Protocol
 
 import numpy as np
 from numpy.typing import NDArray
@@ -509,6 +509,22 @@ class Culture:
         )
 
 
+class LoopTarget(Protocol):
+    """Anything a :class:`ClosedLoop` can drive: a local or remote culture."""
+
+    @property
+    def time_ms(self) -> float: ...
+
+    @property
+    def dt_ms(self) -> float: ...
+
+    def record(self, duration_ms: float, raw: bool = ...) -> SpikeTrains: ...
+
+    def stimulate(
+        self, electrodes: int | Sequence[int], waveform: Waveform | PulseTrain, delay_ms: float = ...
+    ) -> Any: ...
+
+
 @dataclass
 class LoopFrame:
     """What a closed-loop callback sees on each cycle.
@@ -528,7 +544,7 @@ class LoopFrame:
 
     def stimulate(
         self, electrodes: int | Sequence[int], waveform: Waveform | PulseTrain, delay_ms: float = 0.0
-    ) -> list[StimEvent]:
+    ) -> Any:
         """Schedule stimulation after the loop latency (plus ``delay_ms``)."""
         return self._loop.culture.stimulate(
             electrodes, waveform, delay_ms=self._loop.latency_ms + delay_ms
@@ -544,7 +560,7 @@ class ClosedLoop:
 
     def __init__(
         self,
-        culture: Culture,
+        culture: LoopTarget,
         callback: Callable[[LoopFrame], Any],
         hz: float,
         latency_ms: float,
