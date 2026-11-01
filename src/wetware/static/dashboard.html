@@ -1,0 +1,248 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>wetware dashboard</title>
+<style>
+  :root {
+    --bg: #0e1116; --panel: #161b22; --line: #262d36; --text: #d7dde4; --muted: #8b95a1;
+    --accent: #f2a541; --accent2: #5cc8ff; --stim: #ff5d73; --ok: #63d297;
+    --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+         font: 14px/1.4 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+  header { display: flex; align-items: baseline; gap: 24px; padding: 14px 20px;
+           border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+  header h1 { font-size: 16px; margin: 0; letter-spacing: .04em; }
+  header h1 span { color: var(--accent); }
+  .stat { font-family: var(--mono); color: var(--muted); font-size: 12px; }
+  .stat b { color: var(--text); font-weight: 600; }
+  #conn { margin-left: auto; font-size: 12px; font-family: var(--mono); }
+  #conn.live { color: var(--ok); } #conn.down { color: var(--stim); }
+  main { display: grid; grid-template-columns: 360px 1fr; gap: 16px; padding: 16px 20px; }
+  .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 12px 14px; }
+  .panel h2 { font-size: 11px; text-transform: uppercase; letter-spacing: .1em; color: var(--muted);
+              margin: 0 0 10px; font-weight: 600; display: flex; justify-content: space-between; }
+  canvas { display: block; width: 100%; }
+  #heat { aspect-ratio: 1 / 1; cursor: pointer; }
+  .right { display: grid; grid-template-rows: auto auto; gap: 16px; min-width: 0; }
+  #raster { height: 300px; } #rate { height: 140px; }
+  .controls { display: grid; gap: 10px; margin-top: 14px; }
+  .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  label { color: var(--muted); font-size: 12px; min-width: 88px; }
+  input[type=range] { flex: 1; accent-color: var(--accent); }
+  .val { font-family: var(--mono); font-size: 12px; min-width: 56px; text-align: right; }
+  button { background: #1f2630; color: var(--text); border: 1px solid var(--line); border-radius: 6px;
+           padding: 7px 12px; font: inherit; font-size: 13px; cursor: pointer; }
+  button:hover { border-color: var(--accent); }
+  button.primary { background: var(--accent); color: #1b1300; border-color: var(--accent); font-weight: 600; }
+  #sel { font-family: var(--mono); font-size: 12px; color: var(--accent); }
+  #log { font-family: var(--mono); font-size: 11px; color: var(--muted); max-height: 110px; overflow: auto;
+         margin-top: 10px; border-top: 1px solid var(--line); padding-top: 8px; }
+  .burst { color: var(--accent); font-weight: 600; visibility: hidden; }
+  .burst.on { visibility: visible; }
+  .legend { display: flex; gap: 12px; font-size: 11px; color: var(--muted); }
+  .sw { display: inline-block; width: 10px; height: 10px; border-radius: 2px; vertical-align: -1px; margin-right: 4px; }
+  @media (max-width: 900px) { main { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<header>
+  <h1><span>wetware</span> live culture</h1>
+  <div class="stat">t <b id="t">0.0</b> s</div>
+  <div class="stat">DIV <b id="div">-</b></div>
+  <div class="stat">alive <b id="alive">-</b></div>
+  <div class="stat">electrodes <b id="els">-</b></div>
+  <div class="stat">array rate <b id="r">0</b> Hz</div>
+  <div class="stat burst" id="burst">NETWORK BURST</div>
+  <div id="conn" class="down">connecting...</div>
+</header>
+<main>
+  <section class="panel">
+    <h2>Electrode activity <span class="legend"><span><i class="sw" style="background:#3a4250"></i>dead</span><span><i class="sw" style="background:var(--accent2)"></i>selected</span></span></h2>
+    <canvas id="heat"></canvas>
+    <div class="controls">
+      <div class="row"><label>Selected</label><span id="sel">none (click electrodes)</span></div>
+      <div class="row"><label>Amplitude</label><input id="amp" type="range" min="1" max="40" step="1" value="12"><span class="val" id="ampv">12 µA</span></div>
+      <div class="row"><label>Train</label><input id="np" type="range" min="1" max="40" step="1" value="10"><span class="val" id="npv">10 pulses</span></div>
+      <div class="row"><label>Frequency</label><input id="fq" type="range" min="1" max="100" step="1" value="10"><span class="val" id="fqv">10 Hz</span></div>
+      <div class="row">
+        <button class="primary" id="pulse">Single pulse</button>
+        <button id="train">Pulse train</button>
+        <button id="age">Age +7 days</button>
+        <button id="pause">Pause</button>
+      </div>
+      <div class="row"><label>Speed</label><input id="spd" type="range" min="0.25" max="4" step="0.25" value="1"><span class="val" id="spdv">1.00x</span></div>
+    </div>
+    <div id="log"></div>
+  </section>
+  <div class="right">
+    <section class="panel">
+      <h2>Spike raster <span class="legend"><span><i class="sw" style="background:var(--text)"></i>detected spike</span><span><i class="sw" style="background:var(--stim)"></i>stimulus</span></span></h2>
+      <canvas id="raster"></canvas>
+    </section>
+    <section class="panel">
+      <h2>Array firing rate</h2>
+      <canvas id="rate"></canvas>
+    </section>
+  </div>
+</main>
+<script>
+"use strict";
+const WINDOW_MS = 6000;
+const state = { grid: [8, 8], counts: [], dead: new Set(), selected: new Set(), spikes: [], stim: [],
+                rates: [], t: 0, frameMs: 100, smooth: null, paused: false };
+const $ = (id) => document.getElementById(id);
+
+function fit(canvas) {
+  const r = canvas.getBoundingClientRect(), d = window.devicePixelRatio || 1;
+  if (canvas.width !== Math.round(r.width * d) || canvas.height !== Math.round(r.height * d)) {
+    canvas.width = Math.round(r.width * d); canvas.height = Math.round(r.height * d);
+  }
+  const ctx = canvas.getContext("2d"); ctx.setTransform(d, 0, 0, d, 0, 0);
+  return [ctx, r.width, r.height];
+}
+
+function heatColor(x) {           // 0..1 -> dark blue-violet to amber to white
+  const stops = [[14, 17, 22], [64, 36, 110], [190, 60, 90], [242, 165, 65], [255, 245, 220]];
+  x = Math.max(0, Math.min(1, x)) * (stops.length - 1);
+  const i = Math.min(stops.length - 2, Math.floor(x)), f = x - i, a = stops[i], b = stops[i + 1];
+  return `rgb(${a.map((v, k) => Math.round(v + (b[k] - v) * f)).join(",")})`;
+}
+
+function drawHeat() {
+  const [ctx, w, h] = fit($("heat"));
+  const [rows, cols] = state.grid, cw = w / cols, ch = h / rows;
+  ctx.clearRect(0, 0, w, h);
+  const vals = state.smooth || [];
+  const max = Math.max(1, ...vals);
+  for (let e = 0; e < rows * cols; e++) {
+    const r = Math.floor(e / cols), c = e % cols, x = c * cw, y = r * ch;
+    const cx = x + cw / 2, cy = y + ch / 2, rad = Math.min(cw, ch) * 0.42;
+    ctx.beginPath(); ctx.arc(cx, cy, rad, 0, Math.PI * 2);
+    ctx.fillStyle = state.dead.has(e) ? "#3a4250" : heatColor(Math.sqrt((vals[e] || 0) / max));
+    ctx.fill();
+    if (state.selected.has(e)) { ctx.lineWidth = 3; ctx.strokeStyle = "#5cc8ff"; ctx.stroke(); }
+    const flash = state.stim.some(([t, els]) => els.includes(e) && state.t - t < 300);
+    if (flash) { ctx.lineWidth = 2; ctx.strokeStyle = "#ff5d73"; ctx.beginPath(); ctx.arc(cx, cy, rad + 4, 0, Math.PI * 2); ctx.stroke(); }
+    ctx.fillStyle = "rgba(215,221,228,.55)"; ctx.font = "10px ui-monospace, Menlo, monospace";
+    ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText(e, cx, cy);
+  }
+}
+
+function drawRaster() {
+  const [ctx, w, h] = fit($("raster"));
+  const n = state.grid[0] * state.grid[1], t1 = state.t, t0 = t1 - WINDOW_MS;
+  const padL = 30, padB = 18, pw = w - padL - 6, ph = h - padB - 4;
+  ctx.clearRect(0, 0, w, h);
+  ctx.strokeStyle = "#262d36"; ctx.fillStyle = "#8b95a1"; ctx.font = "10px ui-monospace, Menlo, monospace";
+  for (let s = Math.ceil(t0 / 1000); s <= t1 / 1000; s++) {
+    const x = padL + ((s * 1000 - t0) / WINDOW_MS) * pw;
+    ctx.beginPath(); ctx.moveTo(x, 4); ctx.lineTo(x, 4 + ph); ctx.stroke();
+    ctx.textAlign = "center"; ctx.fillText(s + "s", x, h - 5);
+  }
+  ctx.textAlign = "right";
+  for (let e = 0; e < n; e += Math.max(1, Math.round(n / 8))) ctx.fillText(e, padL - 6, 4 + ((e + 0.5) / n) * ph + 3);
+  ctx.fillStyle = "rgba(255,93,115,.55)";
+  for (const [t] of state.stim) if (t >= t0) ctx.fillRect(padL + ((t - t0) / WINDOW_MS) * pw - 1, 4, 2, ph);
+  ctx.fillStyle = "#d7dde4";
+  const rowH = Math.max(1, ph / n - 0.5);
+  for (const [t, e] of state.spikes) {
+    if (t < t0) continue;
+    ctx.fillRect(padL + ((t - t0) / WINDOW_MS) * pw, 4 + (e / n) * ph, 1.2, rowH);
+  }
+}
+
+function drawRate() {
+  const [ctx, w, h] = fit($("rate"));
+  const padL = 44, padB = 18, pw = w - padL - 6, ph = h - padB - 6, t1 = state.t, t0 = t1 - WINDOW_MS;
+  ctx.clearRect(0, 0, w, h);
+  const pts = state.rates.filter(([t]) => t >= t0);
+  const max = Math.max(100, ...pts.map(([, r]) => r)) * 1.1;
+  ctx.fillStyle = "#8b95a1"; ctx.font = "10px ui-monospace, Menlo, monospace"; ctx.textAlign = "right";
+  ctx.strokeStyle = "#262d36";
+  for (let k = 0; k <= 2; k++) {
+    const y = 6 + ph - (k / 2) * ph; ctx.beginPath(); ctx.moveTo(padL, y); ctx.lineTo(w - 6, y); ctx.stroke();
+    ctx.fillText(Math.round((k / 2) * max), padL - 6, y + 3);
+  }
+  if (pts.length < 2) return;
+  const grad = ctx.createLinearGradient(0, 6, 0, 6 + ph);
+  grad.addColorStop(0, "rgba(242,165,65,.45)"); grad.addColorStop(1, "rgba(242,165,65,0)");
+  ctx.beginPath();
+  pts.forEach(([t, r], i) => { const x = padL + ((t - t0) / WINDOW_MS) * pw, y = 6 + ph - (r / max) * ph; i ? ctx.lineTo(x, y) : ctx.moveTo(x, y); });
+  ctx.strokeStyle = "#f2a541"; ctx.lineWidth = 1.5; ctx.stroke();
+  ctx.lineTo(padL + ((pts[pts.length - 1][0] - t0) / WINDOW_MS) * pw, 6 + ph);
+  ctx.lineTo(padL + ((pts[0][0] - t0) / WINDOW_MS) * pw, 6 + ph); ctx.closePath(); ctx.fillStyle = grad; ctx.fill();
+}
+
+function draw() { drawHeat(); drawRaster(); drawRate(); }
+
+function onFrame(f) {
+  state.grid = f.grid; state.t = f.t_ms; state.frameMs = f.frame_ms; state.dead = new Set(f.dead);
+  const rate = f.counts.map((c) => c / (f.frame_ms / 1000));
+  state.smooth = state.smooth && state.smooth.length === rate.length
+    ? state.smooth.map((v, i) => 0.6 * v + 0.4 * rate[i]) : rate;
+  state.spikes.push(...f.spikes); state.stim.push(...f.stim); state.rates.push([f.t_ms, f.rate_hz]);
+  const cut = f.t_ms - WINDOW_MS - 500;
+  state.spikes = state.spikes.filter(([t]) => t >= cut);
+  state.stim = state.stim.filter(([t]) => t >= cut);
+  state.rates = state.rates.filter(([t]) => t >= cut);
+  $("t").textContent = (f.t_ms / 1000).toFixed(1);
+  $("div").textContent = f.health.div.toFixed(1);
+  $("alive").textContent = (100 * f.health.alive_fraction).toFixed(1) + "%";
+  $("els").textContent = f.health.working_electrodes;
+  $("r").textContent = Math.round(f.rate_hz);
+  $("burst").classList.toggle("on", f.bursting);
+  draw();
+}
+
+function log(msg) { const d = document.createElement("div"); d.textContent = `[${(state.t / 1000).toFixed(1)}s] ${msg}`; $("log").prepend(d); }
+
+async function post(path, body) {
+  const r = await fetch(path, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) { log("rejected: " + (j.detail || r.status)); throw new Error(j.detail); }
+  return j;
+}
+
+function selected() {
+  if (!state.selected.size) { log("select one or more electrodes first"); return null; }
+  return [...state.selected];
+}
+
+$("heat").addEventListener("click", (ev) => {
+  const r = ev.target.getBoundingClientRect(), [rows, cols] = state.grid;
+  const c = Math.floor(((ev.clientX - r.left) / r.width) * cols), rr = Math.floor(((ev.clientY - r.top) / r.height) * rows);
+  const e = rr * cols + c;
+  if (state.dead.has(e)) { log(`electrode ${e} is dead`); return; }
+  if (!ev.shiftKey && !ev.metaKey) { const had = state.selected.has(e); state.selected.clear(); if (!had) state.selected.add(e); }
+  else state.selected.has(e) ? state.selected.delete(e) : state.selected.add(e);
+  $("sel").textContent = state.selected.size ? [...state.selected].sort((a, b) => a - b).join(", ") : "none (click electrodes)";
+  drawHeat();
+});
+
+const bind = (id, fmt) => { const el = $(id); const upd = () => ($(id + "v").textContent = fmt(+el.value)); el.addEventListener("input", upd); upd(); };
+bind("amp", (v) => v + " µA"); bind("np", (v) => v + " pulses"); bind("fq", (v) => v + " Hz"); bind("spd", (v) => v.toFixed(2) + "x");
+
+$("pulse").onclick = async () => { const els = selected(); if (!els) return;
+  await post("/api/stimulate", { electrodes: els, amplitude_ua: +$("amp").value }); log(`pulse ${$("amp").value} µA -> ${els}`); };
+$("train").onclick = async () => { const els = selected(); if (!els) return;
+  await post("/api/stimulate", { electrodes: els, amplitude_ua: +$("amp").value, n_pulses: +$("np").value, frequency_hz: +$("fq").value });
+  log(`train ${$("np").value} x ${$("fq").value} Hz -> ${els}`); };
+$("age").onclick = async () => { const h = await post("/api/age", { days: 7 }); log(`aged to DIV ${h.div.toFixed(0)}, ${h.working_electrodes} electrodes working`); };
+$("pause").onclick = async () => { state.paused = !state.paused; await post("/api/control", { paused: state.paused }); $("pause").textContent = state.paused ? "Resume" : "Pause"; };
+$("spd").addEventListener("change", () => post("/api/control", { speed: +$("spd").value }));
+
+function connect() {
+  const ws = new WebSocket((location.protocol === "https:" ? "wss://" : "ws://") + location.host + "/ws");
+  ws.onopen = () => { $("conn").textContent = "live"; $("conn").className = "live"; };
+  ws.onmessage = (m) => onFrame(JSON.parse(m.data));
+  ws.onclose = () => { $("conn").textContent = "disconnected, retrying"; $("conn").className = "down"; setTimeout(connect, 1500); };
+}
+window.addEventListener("resize", draw);
+connect();
+</script>
+</body>
+</html>
