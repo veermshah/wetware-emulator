@@ -119,10 +119,27 @@ class Izhikevich(NeuronModel):
         n_sub = max(1, int(round(dt / self.substep_ms)))
         h = dt / n_sub
         v, u = self._v, self.u
+        if getattr(self, "_buf", None) is None or self._buf.size != v.size:
+            self._buf = np.empty_like(v)
+            self._ha = None
+        if self._ha is None or self._h != h:
+            self._h, self._ha, self._hab = h, h * self.a, h * self.a * self.b
+        buf = self._buf
         fired = np.zeros(v.size, dtype=bool)
         for _ in range(n_sub):
-            v += h * (0.04 * v * v + 5.0 * v + 140.0 - u + current)
-            u += h * self.a * (self.b * v - u)
+            # v += h * (0.04 v^2 + 5 v + 140 - u + I), written in place.
+            np.multiply(v, 0.04, out=buf)
+            buf += 5.0
+            buf *= v
+            buf += 140.0
+            buf -= u
+            buf += current
+            buf *= h
+            v += buf
+            # u += h a (b v - u)
+            np.multiply(self._hab, v, out=buf)
+            buf -= self._ha * u
+            u += buf
             spk = v >= 30.0
             if spk.any():
                 fired |= spk
