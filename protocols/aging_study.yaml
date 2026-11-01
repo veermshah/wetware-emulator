@@ -1,0 +1,10 @@
+# Probe the same culture once a week for six weeks.
+name: aging_study
+culture: {n_neurons: 800, seed: 3, div: 14}
+blocks:
+  - type: repeat
+    times: 6
+    blocks:
+      - {type: rest, duration_ms: 3000}
+      - {type: train, electrodes: [19, 20], amplitude_ua: 10, n_pulses: 5, frequency_hz: 1, tail_ms: 1000}
+      - {type: age, days: 7}

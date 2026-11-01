@@ -1,0 +1,22 @@
+# Baseline, an amplitude ramp, two pulse trains and a closed-loop block on one culture.
+name: stimulus_response
+culture:
+  n_neurons: 1000
+  seed: 1
+  div: 21
+  mea: {rows: 8, cols: 8, pitch_um: 200}
+record:
+  raw: false
+  ground_truth: false
+blocks:
+  - {name: baseline, type: rest, duration_ms: 5000}
+  - {name: ramp, type: ramp, electrodes: [27], start_ua: 2, stop_ua: 20, steps: 10, interval_ms: 500}
+  - {name: train_2hz, type: train, electrodes: [27], amplitude_ua: 12, n_pulses: 10, frequency_hz: 2, tail_ms: 1000}
+  - {name: train_20hz, type: train, electrodes: [27], amplitude_ua: 12, n_pulses: 20, frequency_hz: 20, tail_ms: 2000}
+  - name: feedback
+    type: closed_loop
+    hz: 20
+    duration_ms: 5000
+    latency_ms: 2
+    rule: {type: threshold, watch: [36, 37], threshold: 3, stimulate: [27], amplitude_ua: 8}
+  - {name: recovery, type: rest, duration_ms: 3000}
