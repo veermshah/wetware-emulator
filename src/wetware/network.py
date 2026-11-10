@@ -120,7 +120,7 @@ class Network:
         self.trace_post = np.zeros(n)
 
         # Background drive.
-        self.bias = rng_build.normal(p.bias_mean, p.bias_sd, n)
+        self.bias: FloatArray = np.asarray(rng_build.normal(p.bias_mean, p.bias_sd, size=n))
         exc_idx = np.flatnonzero(self.is_exc)
         n_pace = int(round(p.pacemaker_fraction * exc_idx.size))
         self.pacemakers = rng_build.choice(exc_idx, n_pace, replace=False)

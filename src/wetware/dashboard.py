@@ -84,7 +84,10 @@ class Runner:
             "counts": counts.tolist(),
             "rate_hz": float(counts.sum() / (self.frame_ms / 1000.0)),
             "spikes": np.column_stack([np.round(t, 2), e]).tolist() if t.size else [],
-            "stim": [[float(s), list(el)] for s, el in zip(rec.stim.times_ms, rec.stim.electrodes, strict=True)],
+            "stim": [
+                [float(s), list(el)]
+                for s, el in zip(rec.stim.times_ms, rec.stim.electrodes, strict=True)
+            ],
             "dead": rec.dead_electrodes,
             "bursting": bursting,
             "health": health,

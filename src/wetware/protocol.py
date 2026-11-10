@@ -139,7 +139,9 @@ def _validate_blocks(blocks: list[Any], where: str) -> None:
             raise ProtocolError(f"{loc}: each block needs a 'type'")
         t = b["type"]
         if t not in BLOCK_TYPES:
-            raise ProtocolError(f"{loc}: unknown block type {t!r}; use one of {sorted(BLOCK_TYPES)}")
+            raise ProtocolError(
+                f"{loc}: unknown block type {t!r}; use one of {sorted(BLOCK_TYPES)}"
+            )
         missing = [k for k in required[t] if k not in b]
         if missing:
             raise ProtocolError(f"{loc} ({t}): missing {missing}")

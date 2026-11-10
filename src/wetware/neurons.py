@@ -102,6 +102,10 @@ class Izhikevich(NeuronModel):
         self.substep_ms = substep_ms
         self._v: FloatArray = np.zeros(0)
         self.u: FloatArray = np.zeros(0)
+        self._buf: FloatArray = np.zeros(0)
+        self._h = 0.0
+        self._ha: FloatArray | None = None
+        self._hab: FloatArray = np.zeros(0)
 
     def init_state(self, is_excitatory: BoolArray, rng: np.random.Generator) -> None:
         n = is_excitatory.size
@@ -119,11 +123,13 @@ class Izhikevich(NeuronModel):
         n_sub = max(1, int(round(dt / self.substep_ms)))
         h = dt / n_sub
         v, u = self._v, self.u
-        if getattr(self, "_buf", None) is None or self._buf.size != v.size:
+        if self._buf.size != v.size:
             self._buf = np.empty_like(v)
             self._ha = None
         if self._ha is None or self._h != h:
-            self._h, self._ha, self._hab = h, h * self.a, h * self.a * self.b
+            self._h, self._hab = h, h * self.a * self.b
+            self._ha = h * self.a
+        ha = self._ha
         buf = self._buf
         fired = np.zeros(v.size, dtype=bool)
         for _ in range(n_sub):
@@ -138,7 +144,7 @@ class Izhikevich(NeuronModel):
             v += buf
             # u += h a (b v - u)
             np.multiply(self._hab, v, out=buf)
-            buf -= self._ha * u
+            buf -= ha * u
             u += buf
             spk = v >= 30.0
             if spk.any():

@@ -18,7 +18,7 @@ def dash():
 
 def test_dashboard_page_and_frames(dash):
     page = dash.get("/")
-    assert page.status_code == 200 and "<canvas id=\"heat\"" in page.text
+    assert page.status_code == 200 and '<canvas id="heat"' in page.text
     f = dash.post("/api/step").json()
     assert f["type"] == "frame" and len(f["counts"]) == 16 and f["t_ms"] == 50
     with dash.websocket_connect("/ws") as ws:
@@ -29,11 +29,16 @@ def test_dashboard_page_and_frames(dash):
 def test_dashboard_controls(dash):
     r = dash.post("/api/stimulate", json={"electrodes": [3], "amplitude_ua": 10, "n_pulses": 3})
     assert r.status_code == 200 and r.json()["scheduled"] == 3
-    assert dash.post("/api/stimulate", json={"electrodes": [3], "amplitude_ua": 90}).status_code == 422
+    assert (
+        dash.post("/api/stimulate", json={"electrodes": [3], "amplitude_ua": 90}).status_code == 422
+    )
     f = dash.post("/api/step").json()
     assert len(f["stim"]) >= 1
     assert dash.post("/api/age", json={"days": 7}).json()["div"] == 28
-    assert dash.post("/api/control", json={"paused": True, "speed": 2}).json() == {"paused": True, "speed": 2}
+    assert dash.post("/api/control", json={"paused": True, "speed": 2}).json() == {
+        "paused": True,
+        "speed": 2,
+    }
     assert dash.get("/api/info").json()["events"][0]["kind"] == "stim"
 
 
@@ -43,7 +48,10 @@ def test_parse_range():
 
 def test_cli_demo_and_run(tmp_path, capsys):
     pytest.importorskip("matplotlib")
-    assert main(["demo", "--neurons", "200", "--duration-ms", "500", "--h5", str(tmp_path / "d.h5")]) == 0
+    assert (
+        main(["demo", "--neurons", "200", "--duration-ms", "500", "--h5", str(tmp_path / "d.h5")])
+        == 0
+    )
     assert (tmp_path / "d.h5").exists()
     proto = tmp_path / "p.yaml"
     proto.write_text(

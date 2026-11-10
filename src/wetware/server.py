@@ -182,9 +182,7 @@ def create_app() -> FastAPI:
             try:
                 events = s.culture.stimulate(req.electrodes, req.waveform(), req.delay_ms)
             except StimulationSafetyError as e:
-                raise HTTPException(
-                    422, {"error": "stimulation_safety", "message": str(e)}
-                ) from e
+                raise HTTPException(422, {"error": "stimulation_safety", "message": str(e)}) from e
             except (ValueError, IndexError) as e:
                 raise HTTPException(422, {"error": "invalid_request", "message": str(e)}) from e
             return {

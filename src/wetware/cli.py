@@ -31,7 +31,9 @@ def cmd_demo(a: argparse.Namespace) -> int:
     rec = c.record(a.duration_ms, raw=a.raw)
     s = analysis.summarize(rec)
     print(f"  {int(rec.counts.sum())} spikes on {len(rec.active_electrodes)} active electrodes")
-    print(f"  mean rate {s['mean_rate_hz']:.2f} Hz/electrode, {s['burst_rate_hz']:.2f} network bursts/s")
+    print(
+        f"  mean rate {s['mean_rate_hz']:.2f} Hz/electrode, {s['burst_rate_hz']:.2f} network bursts/s"
+    )
     c.stimulate([27, 28], pulse_train(12.0, n_pulses=10, frequency_hz=2))
     evoked = c.record(5500)
     resp = analysis.evoked_response(evoked)
@@ -43,7 +45,9 @@ def cmd_demo(a: argparse.Namespace) -> int:
         from . import plotting
 
         full = rec.concatenate([rec, evoked])
-        plotting.summary_figure(full, title=f"wetware demo (seed {a.seed})").savefig(a.plot, dpi=110)
+        plotting.summary_figure(full, title=f"wetware demo (seed {a.seed})").savefig(
+            a.plot, dpi=110
+        )
         print(f"  wrote {a.plot}")
     return 0
 
@@ -69,7 +73,9 @@ def cmd_run(a: argparse.Namespace) -> int:
     from .protocol import run_protocol
 
     res = run_protocol(a.protocol, out_dir=a.out, figure=not a.no_figure)
-    print(f"protocol {res.name}: {len(res.epochs)} epochs, {res.recording.duration_ms / 1000:.1f} s")
+    print(
+        f"protocol {res.name}: {len(res.epochs)} epochs, {res.recording.duration_ms / 1000:.1f} s"
+    )
     for k in ("n_spikes", "n_stim_pulses", "mean_rate_hz", "burst_rate_hz"):
         v = res.summary[k]
         print(f"  {k}: {v:.3g}" if isinstance(v, float) else f"  {k}: {v}")
@@ -90,7 +96,9 @@ def cmd_batch(a: argparse.Namespace) -> int:
     rows = run_batch(spontaneous_activity, conds, processes=a.workers, duration_ms=a.duration_ms)
     for div, (m, se, n) in aggregate(rows, "div", "mean_rate_hz").items():
         b = aggregate([r for r in rows if r["div"] == div], "div", "burst_rate_hz")[div]
-        print(f"  DIV {div:g}: rate {m:.2f} +- {se:.2f} Hz, bursts {b[0]:.2f} +- {b[1]:.2f}/s (n={n})")
+        print(
+            f"  DIV {div:g}: rate {m:.2f} +- {se:.2f} Hz, bursts {b[0]:.2f} +- {b[1]:.2f}/s (n={n})"
+        )
     if a.out:
         print(f"  wrote {write_csv(rows, a.out)}")
     return 0
@@ -99,14 +107,20 @@ def cmd_batch(a: argparse.Namespace) -> int:
 def cmd_bench(a: argparse.Namespace) -> int:
     from .benchmark import format_table, machine, measure, run_suite
 
-    rows = [measure(1000, duration_ms=a.duration_ms)] if a.quick else run_suite(duration_ms=a.duration_ms)
+    rows = (
+        [measure(1000, duration_ms=a.duration_ms)]
+        if a.quick
+        else run_suite(duration_ms=a.duration_ms)
+    )
     print(machine())
     print(format_table(rows))
     return 0
 
 
 def build_parser() -> argparse.ArgumentParser:
-    p = argparse.ArgumentParser(prog="wetware", description="Simulated cortical culture on a virtual MEA.")
+    p = argparse.ArgumentParser(
+        prog="wetware", description="Simulated cortical culture on a virtual MEA."
+    )
     p.add_argument("--version", action="version", version=f"wetware {__version__}")
     sub = p.add_subparsers(dest="command", required=True)
 

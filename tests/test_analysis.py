@@ -9,7 +9,7 @@ def _synthetic() -> SpikeTrains:
     """Hand-made recording: 4 electrodes, two bursts, one stim pulse."""
     rng = np.random.default_rng(0)
     times = []
-    for e in range(4):
+    for _ in range(4):
         bg = np.sort(rng.uniform(0, 2000, 4))
         b1 = 500 + rng.uniform(0, 40, 20)
         b2 = 1500 + rng.uniform(0, 40, 20)

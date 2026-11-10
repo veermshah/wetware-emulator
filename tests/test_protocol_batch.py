@@ -47,8 +47,13 @@ def test_threshold_rule_triggers():
                 "type": "closed_loop",
                 "hz": 50,
                 "duration_ms": 2000,
-                "rule": {"type": "threshold", "watch": list(range(16)), "threshold": 1,
-                         "stimulate": [0], "amplitude_ua": 5},
+                "rule": {
+                    "type": "threshold",
+                    "watch": list(range(16)),
+                    "threshold": 1,
+                    "stimulate": [0],
+                    "amplitude_ua": 5,
+                },
             }
         ],
     }

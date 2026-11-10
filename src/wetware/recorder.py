@@ -84,8 +84,10 @@ class Recorder:
 
         el = mea.positions
         d = np.sqrt(((el[:, None, :] - neuron_positions[None, :, :]) ** 2).sum(-1))
-        amp = p.spike_amplitude_uv * rng.lognormal(0.0, p.spike_amplitude_sigma, d.shape[1])
-        gain = amp[None, :] / (1.0 + (d / p.pickup_r0_um) ** 2)
+        amp = p.spike_amplitude_uv * np.asarray(
+            rng.lognormal(0.0, p.spike_amplitude_sigma, size=d.shape[1])
+        )
+        gain: FloatArray = amp[None, :] / (1.0 + (d / p.pickup_r0_um) ** 2)
         gain[d > p.pickup_max_um] = 0.0
         self.gain = gain  # (n_electrodes, n_neurons), µV
         self.noise_rms = mea.noise_rms_uv * np.clip(
@@ -113,7 +115,7 @@ class Recorder:
         spike_times_ms: FloatArray,
         stim_events: list[StimEvent],
         keep_raw: bool = False,
-    ) -> tuple[list[FloatArray], FloatArray | None]:
+    ) -> tuple[list[FloatArray], NDArray[np.float32] | None]:
         """Synthesize and analyse one chunk.
 
         Returns:
@@ -139,9 +141,9 @@ class Recorder:
             imp = np.zeros((n_el, n))
             g = self.gain[:, nrn]
             rows = np.nonzero(g.any(axis=1))[0]
-            for e in rows:
-                np.add.at(imp[e], idx, g[e])
-                buf[e, : n + tlen - 1] += np.convolve(imp[e], self.template)
+            for row in rows.tolist():
+                np.add.at(imp[row], idx, g[row])
+                buf[row, : n + tlen - 1] += np.convolve(imp[row], self.template)
 
         # 2. Stimulation artifacts.
         blank = np.zeros(n + extra, dtype=bool)

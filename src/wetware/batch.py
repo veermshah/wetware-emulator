@@ -107,7 +107,9 @@ def run_batch(
                 os.environ[k] = v
 
 
-def aggregate(rows: list[dict[str, Any]], by: str, metric: str) -> dict[Any, tuple[float, float, int]]:
+def aggregate(
+    rows: list[dict[str, Any]], by: str, metric: str
+) -> dict[Any, tuple[float, float, int]]:
     """Mean, standard error and count of ``metric`` grouped by ``by``."""
     groups: dict[Any, list[float]] = {}
     for r in rows:

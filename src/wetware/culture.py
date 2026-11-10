@@ -93,7 +93,10 @@ class Culture:
         plasticity: Enable STDP on excitatory synapses.
         div: Days in vitro at the start of the simulation.
         margin_um: How far the culture extends beyond the outer electrodes.
-        params, recorder_params, stim_params, aging_params: Model parameters.
+        params: Network parameters.
+        recorder_params: Recording-chain parameters.
+        stim_params: Stimulation coupling parameters.
+        aging_params: Health-drift parameters.
         safety: Stimulation limits; violations raise
             :class:`~wetware.stimulation.StimulationSafetyError`.
 
@@ -488,7 +491,9 @@ class Culture:
             if die.any():
                 self.network.kill(die)
             p_fail = (a.electrode_failure_base + a.electrode_failure_slope * past) * step
-            fail = np.flatnonzero((rng.random(self.mea.n_electrodes) < p_fail) & self.mea.alive_mask)
+            fail = np.flatnonzero(
+                (rng.random(self.mea.n_electrodes) < p_fail) & self.mea.alive_mask
+            )
             if fail.size:
                 self.mea.mark_dead(fail.tolist())
             self._div += step
@@ -521,7 +526,10 @@ class LoopTarget(Protocol):
     def record(self, duration_ms: float, raw: bool = ...) -> SpikeTrains: ...
 
     def stimulate(
-        self, electrodes: int | Sequence[int], waveform: Waveform | PulseTrain, delay_ms: float = ...
+        self,
+        electrodes: int | Sequence[int],
+        waveform: Waveform | PulseTrain,
+        delay_ms: float = ...,
     ) -> Any: ...
 
 
@@ -543,7 +551,10 @@ class LoopFrame:
     _loop: ClosedLoop = field(repr=False)
 
     def stimulate(
-        self, electrodes: int | Sequence[int], waveform: Waveform | PulseTrain, delay_ms: float = 0.0
+        self,
+        electrodes: int | Sequence[int],
+        waveform: Waveform | PulseTrain,
+        delay_ms: float = 0.0,
     ) -> Any:
         """Schedule stimulation after the loop latency (plus ``delay_ms``)."""
         return self._loop.culture.stimulate(

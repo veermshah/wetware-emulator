@@ -29,7 +29,9 @@ def measure(
     walls = []
     spikes = 0
     for _ in range(repeats):
-        c = Culture(n_neurons=n_neurons, seed=seed, neuron_model=neuron_model, plasticity=plasticity)
+        c = Culture(
+            n_neurons=n_neurons, seed=seed, neuron_model=neuron_model, plasticity=plasticity
+        )
         c.advance(200.0)
         t0 = time.perf_counter()
         rec = c.record(duration_ms, raw=raw, ground_truth=True)

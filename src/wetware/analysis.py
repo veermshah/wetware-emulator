@@ -61,13 +61,14 @@ def detect_bursts(
     stops = np.flatnonzero(edges == -1)
     gap_bins = int(round(merge_gap_ms / bin_ms))
     merged: list[list[int]] = []
-    for s, e in zip(starts, stops, strict=True):
-        if merged and s - merged[-1][1] <= gap_bins:
-            merged[-1][1] = int(e)
+    for a, b in zip(starts, stops, strict=True):
+        if merged and a - merged[-1][1] <= gap_bins:
+            merged[-1][1] = int(b)
         else:
-            merged.append([int(s), int(e)])
+            merged.append([int(a), int(b)])
     bursts = []
-    for s, e in merged:
+    for s0, e0 in merged:
+        s, e = int(s0), int(e0)
         seg = counts[:, s:e]
         n_el = int((seg.sum(axis=1) > 0).sum())
         if n_el < min_electrodes:
@@ -177,7 +178,7 @@ def cross_correlogram(
     b = np.sort(b)
     lo = np.searchsorted(b, a - max_lag_ms)
     hi = np.searchsorted(b, a + max_lag_ms)
-    diffs = np.concatenate([b[i:j] - t for t, i, j in zip(a, lo, hi, strict=True)]) if a.size else []
+    diffs = np.concatenate([b[i:j] - t for t, i, j in zip(a, lo, hi, strict=True)])
     return centres, np.histogram(diffs, edges)[0].astype(float)
 
 
@@ -229,8 +230,5 @@ def summarize(rec: SpikeTrains) -> dict[str, float]:
         "active_electrodes": float(len(rec.active_electrodes)),
         "burst_rate_hz": stats["rate_hz"],
         "mean_burst_duration_ms": stats["mean_duration_ms"],
-        "burst_fraction": float(
-            sum(b.n_spikes for b in bursts) / max(int(rec.counts.sum()), 1)
-        ),
+        "burst_fraction": float(sum(b.n_spikes for b in bursts) / max(int(rec.counts.sum()), 1)),
     }
-

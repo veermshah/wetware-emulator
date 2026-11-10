@@ -196,9 +196,11 @@ class SafetyLimits:
                 f"amplitude {waveform.peak_amplitude_ua:g} µA exceeds the "
                 f"{self.max_amplitude_ua:g} µA limit"
             )
-        longest = max(p.duration_us for p in waveform.phases if p.amplitude_ua != 0) if any(
-            p.amplitude_ua != 0 for p in waveform.phases
-        ) else 0.0
+        longest = (
+            max(p.duration_us for p in waveform.phases if p.amplitude_ua != 0)
+            if any(p.amplitude_ua != 0 for p in waveform.phases)
+            else 0.0
+        )
         if longest > self.max_phase_us:
             raise StimulationSafetyError(
                 f"phase of {longest:g} µs exceeds the {self.max_phase_us:g} µs limit"

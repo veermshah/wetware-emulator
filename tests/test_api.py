@@ -67,6 +67,7 @@ def test_stimulation_is_logged_and_evokes_activity():
     assert len(stim.stim) == 10
     assert stim.stim.electrodes[0] == (5,)
     assert stim.stim.times_ms[0] == pytest.approx(quiet.t_stop_ms)
+
     # Ground-truth spikes within 10 ms of each pulse beat the unstimulated baseline.
     def early(rec, events):
         rel = rec.gt_times_ms[None, :] - events[:, None]

@@ -65,7 +65,9 @@ class WetwareClient:
         client: httpx.Client | None = None,
         timeout: float = 300.0,
     ) -> None:
-        self.http = client if client is not None else httpx.Client(base_url=base_url, timeout=timeout)
+        self.http = (
+            client if client is not None else httpx.Client(base_url=base_url, timeout=timeout)
+        )
 
     def health(self) -> dict[str, Any]:
         r = self.http.get("/health")
@@ -163,7 +165,9 @@ class RemoteCulture:
         _raise_for(r)
         return list(r.json()["times_ms"])
 
-    def record(self, duration_ms: float, raw: bool = False, ground_truth: bool = False) -> SpikeTrains:
+    def record(
+        self, duration_ms: float, raw: bool = False, ground_truth: bool = False
+    ) -> SpikeTrains:
         r = self._http.post(
             f"/cultures/{self.id}/record",
             json={"duration_ms": duration_ms, "raw": raw, "ground_truth": ground_truth},

@@ -136,9 +136,7 @@ def save_hdf5(
         if rec.gt_times_ms is not None and rec.gt_neurons is not None:
             gt = f.create_group("analysis/ground_truth")
             gt.create_dataset("neuron_ids", data=rec.gt_neurons, compression=compression)
-            gt.create_dataset(
-                "spike_times", data=rec.gt_times_ms / 1000.0, compression=compression
-            )
+            gt.create_dataset("spike_times", data=rec.gt_times_ms / 1000.0, compression=compression)
     return path
 
 
@@ -176,6 +174,4 @@ def load_hdf5(path: str | Path) -> SpikeTrains:
         if "analysis/ground_truth" in f:
             gn = f["analysis/ground_truth/neuron_ids"][()]
             gt = f["analysis/ground_truth/spike_times"][()] * 1000.0
-    return SpikeTrains(
-        t_start, duration, times, pos, grid, dead, stim, v, fs, gn, gt, meta
-    )
+    return SpikeTrains(t_start, duration, times, pos, grid, dead, stim, v, fs, gn, gt, meta)

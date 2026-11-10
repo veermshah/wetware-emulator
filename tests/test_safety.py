@@ -80,7 +80,10 @@ def test_dead_and_out_of_range_electrodes(culture):
 
 def test_too_many_electrodes():
     c = Culture(
-        n_neurons=100, seed=0, mea=MEA(rows=4, cols=4), safety=SafetyLimits(max_electrodes_per_pulse=2)
+        n_neurons=100,
+        seed=0,
+        mea=MEA(rows=4, cols=4),
+        safety=SafetyLimits(max_electrodes_per_pulse=2),
     )
     with pytest.raises(StimulationSafetyError):
         c.stimulate([0, 1, 2], biphasic_pulse(5.0))
