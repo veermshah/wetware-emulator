@@ -1,0 +1,18 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+title: "wetware-emulator: a simulated cortical culture on a virtual multi-electrode array"
+type: software
+authors:
+  - family-names: Shah
+    given-names: Veer
+version: 0.1.0
+date-released: 2026-11-09
+license: MIT
+repository-code: "https://github.com/veermshah/wetware-emulator"
+url: "https://veermshah.github.io/wetware-emulator/"
+keywords:
+  - biocomputing
+  - wetware
+  - neuroscience
+  - multi-electrode array
+  - simulation
